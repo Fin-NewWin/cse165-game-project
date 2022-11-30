@@ -1,3 +1,4 @@
 # ignoring compiled code
-a.out
-a.exe
+*.o
+*.out
+*.exe
