@@ -1,11 +1,12 @@
 #include <GL/glut.h>
 #include <SOIL/SOIL.h>
 #include <cmath>
-#include <cstring>
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+
+#include "Player.h"
 
 using namespace std;
 
@@ -19,7 +20,7 @@ using namespace std;
 
 #define SPACEBAR 32
 
-double a = 50.0, b, velocityBlock, velocityPlayer, maxVelocity;
+double a = 50, b;
 double block[30], timediff;
 double separator;
 bool finished;
@@ -30,21 +31,20 @@ clock_t oldTime, newTime;
 bool flag = false;
 
 // Load all the images into OpenGL textures
-GLuint bgd, stone, runner, go;
+GLuint bgd, tree, runner, go;
 void loadTextures() {
-
     bgd = SOIL_load_OGL_texture(
             "images/bgd.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID,
             SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y | SOIL_FLAG_NTSC_SAFE_RGB |
             SOIL_FLAG_COMPRESS_TO_DXT);
 
-    stone = SOIL_load_OGL_texture(
-            "images/stone.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID,
+    tree = SOIL_load_OGL_texture(
+            "images/tree.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID,
             SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y | SOIL_FLAG_NTSC_SAFE_RGB |
             SOIL_FLAG_COMPRESS_TO_DXT);
 
     runner = SOIL_load_OGL_texture(
-            "images/skater.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID,
+            "images/dino.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID,
             SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y | SOIL_FLAG_NTSC_SAFE_RGB |
             SOIL_FLAG_COMPRESS_TO_DXT);
 
@@ -54,13 +54,16 @@ void loadTextures() {
             SOIL_FLAG_COMPRESS_TO_DXT);
 }
 
+
+
+Player* player;
+
 // Initialize the parameters of the game
 void initialize() {
+    player = new Player();
+
     oldTime = clock();
     block[0] = 700;
-    velocityPlayer = 0;
-    velocityBlock = 240;
-    maxVelocity = 240;
     flag = false;
     stoneCount = 0;
     lastBlock = 0;
@@ -82,7 +85,7 @@ void myInit() {
 
 // Create Background Scene
 void createBgd() {
-    separator -= velocityBlock * timediff;
+    separator -= player->getVelocityBlock() * timediff;
     if (separator <= 0)
         separator += 640;
 
@@ -166,20 +169,24 @@ void disp() {
 
         createBgd();
 
-        b += velocityPlayer * timediff;
-        if (b >= MAX_HEIGHT) {
-            velocityPlayer = -1 * maxVelocity;
+        b+= player->getVelocityPlayer() * timediff ;
+        if(b>=MAX_HEIGHT){
+            player->setVelocityPlayer(-1 * player->getMaxVelocity());
             flag = false;
         }
-        if (b <= MIN_HEIGHT) {
-            b = MIN_HEIGHT;
+        if(b<=MIN_HEIGHT) {
+            b = MIN_HEIGHT ;
             if (flag) {
-                velocityPlayer = maxVelocity;
+                // velocityPlayer = maxVelocity;
+                // velocityPlayer = player->getMaxVelocity();
+                player->setVelocityPlayer(player->getMaxVelocity());
                 // PlaySound(TEXT("sounds/jump.wav"), NULL, SND_ASYNC|SND_FILENAME);
                 // playwav("sounds/jump.wav");
             } else
-                velocityPlayer = 0;
+                player->setVelocityPlayer(0);
         }
+
+        player->showPlayer(runner);
 
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, runner);
@@ -203,10 +210,11 @@ void disp() {
         glVertex2d(a + 25, b - 25);
         glEnd();
 
-        double changePos = velocityBlock * timediff;
+        // double changePos = velocityBlock * timediff;
+        double changePos = player->getVelocityBlock() * timediff;
 
         glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, stone);
+        glBindTexture(GL_TEXTURE_2D, tree);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -261,8 +269,10 @@ void disp() {
             lastBlock--;
             stoneCount++;
             if (stoneCount % 5 == 0) {
-                velocityBlock += 10;
-                maxVelocity += 15;
+                // velocityBlock += 10;
+                // maxVelocity += 15;
+                player->setVelocityBlock(player->getVelocityBlock() + 10);
+                player->setMaxVelocity(player->getMaxVelocity() + 15);
             }
         }
     } else {
@@ -287,10 +297,12 @@ void disp() {
 
         int len, i;
 
+
         string SC = "Score: ";
         SC += to_string(finalscore);
         len = SC.size();
         glRasterPos2f(280 - len / 2, 260);
+
 
         for (i = 0; i < len; i++) {
             glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, SC[i]);
